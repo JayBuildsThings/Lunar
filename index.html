@@ -35,6 +35,15 @@
                     boxShadow: {
                         'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
                         'glow': '0 0 20px var(--color-primary)'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 },
             },
@@ -257,7 +266,7 @@
             <header class="sticky top-0 z-10 bg-surface/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-b border-slate-100">
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Period Insights</h1>
-                    <p class="text-xs text-slate-500 font-medium">Updated today</p>
+                    <p class="text-xs text-slate-500 font-medium">Trends & Correlations</p>
                 </div>
             </header>
             
@@ -268,107 +277,111 @@
                         <span class="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full inline-block mb-2">Regular</span>
                         <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Avg Cycle</p>
                         <p class="text-slate-900 text-2xl font-bold"><span id="insight-cycle-length">28</span> Days</p>
+                        <p class="text-xs text-slate-400 mt-1">+/- 2 days variation</p>
                     </div>
                     <div class="bg-primary rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
                         <p class="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Next Period</p>
                         <p class="text-white text-2xl font-bold" id="insight-next-period">In 16 Days</p>
+                        <p class="text-xs text-white/80 mt-1">Nov 12 estimated</p>
                     </div>
                 </div>
 
-                <!-- History Chart -->
+                <!-- Insightful Cycle History -->
                 <div class="px-4 pb-4">
                     <div class="bg-surface rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <h3 class="text-lg font-bold mb-4">Cycle History</h3>
-                        <div class="h-32 flex items-end justify-between gap-2">
-                            <div class="flex-1 bg-primary/20 rounded-t-lg h-[60%]"></div>
-                            <div class="flex-1 bg-primary/40 rounded-t-lg h-[80%]"></div>
-                            <div class="flex-1 bg-primary rounded-t-lg h-[90%] relative">
-                                <span class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">Now</span>
-                            </div>
-                            <div class="flex-1 bg-primary/20 rounded-t-lg h-[75%]"></div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold">Cycle Consistency</h3>
+                            <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">Last 4 Months</span>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-400 mt-2">
+                        
+                        <div class="h-32 flex items-end justify-between gap-3">
+                            <!-- Jul -->
+                            <div class="flex flex-col items-center gap-2 flex-1 group">
+                                <span class="text-xs font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">29</span>
+                                <div class="w-full bg-primary/20 rounded-t-lg h-[65%] hover:bg-primary/30 transition-colors relative"></div>
+                            </div>
+                            <!-- Aug -->
+                            <div class="flex flex-col items-center gap-2 flex-1 group">
+                                <span class="text-xs font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">27</span>
+                                <div class="w-full bg-primary/20 rounded-t-lg h-[55%] hover:bg-primary/30 transition-colors"></div>
+                            </div>
+                             <!-- Sep -->
+                            <div class="flex flex-col items-center gap-2 flex-1 group">
+                                <span class="text-xs font-bold text-primary animate-bounce">28</span>
+                                <div class="w-full bg-primary rounded-t-lg h-[60%] shadow-lg shadow-primary/20 relative">
+                                    <div class="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full opacity-50"></div>
+                                </div>
+                            </div>
+                             <!-- Oct -->
+                            <div class="flex flex-col items-center gap-2 flex-1 group">
+                                <span class="text-xs font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">--</span>
+                                <div class="w-full bg-slate-100 rounded-t-lg h-[20%] border border-dashed border-slate-300"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 mt-2 font-medium">
                             <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Symptom Patterns -->
+                <!-- Phase-Based Symptom Correlations (Dynamic) -->
                 <section class="px-4 py-2">
-                    <h3 class="text-lg font-bold text-slate-900 mb-4 px-1">Symptom Patterns</h3>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div class="bg-surface p-4 rounded-xl border border-slate-100 flex items-center gap-4">
-                            <div class="size-12 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-orange-500" style="font-size: 24px;">bolt</span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between mb-1">
-                                    <p class="font-bold text-slate-800">Cramps</p>
-                                    <span class="text-xs font-medium text-slate-500">Moderate</span>
-                                </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2">
-                                    <div class="bg-orange-400 h-2 rounded-full" style="width: 65%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-surface p-4 rounded-xl border border-slate-100 flex items-center gap-4">
-                            <div class="size-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-blue-500" style="font-size: 24px;">water_drop</span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between mb-1">
-                                    <p class="font-bold text-slate-800">Bloating</p>
-                                    <span class="text-xs font-medium text-slate-500">High</span>
-                                </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2">
-                                    <div class="bg-blue-400 h-2 rounded-full" style="width: 85%"></div>
-                                </div>
-                            </div>
-                        </div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 px-1">Symptom Forecast</h3>
+                    <!-- Dynamic Container for Forecasts -->
+                    <div id="insight-symptom-forecast" class="grid grid-cols-1 gap-3">
+                        <!-- Populated by JS based on history -->
                     </div>
                 </section>
 
-                <!-- Mood Flow -->
+                <!-- Interactive Mood Flow -->
                 <section class="px-4 py-4">
-                    <div class="rounded-2xl bg-surface p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="rounded-2xl bg-gradient-to-br from-surface to-purple-50 p-6 shadow-sm border border-slate-100 relative overflow-hidden">
                         <div class="flex justify-between items-start mb-6 relative z-10">
                             <div>
-                                <h3 class="text-lg font-bold text-slate-900">Mood Flow</h3>
-                                <p class="text-sm text-slate-500 mt-1">Energy dips during Luteal phase</p>
+                                <h3 class="text-lg font-bold text-slate-900">Energy & Mood</h3>
+                                <p class="text-sm text-slate-500 mt-1">Current Status: <strong class="text-primary">Peak Energy</strong></p>
                             </div>
-                            <div class="size-8 rounded-full bg-pink-50 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-pink-500" style="font-size: 20px;">mood</span>
+                            <div class="size-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-yellow-600" style="font-size: 20px;">battery_charging_full</span>
                             </div>
                         </div>
-                        <!-- Abstract Line Chart Visualization -->
+                        <!-- Chart -->
                         <div class="relative h-32 w-full mt-2">
-                            <!-- Grid Lines -->
                             <div class="absolute inset-0 flex flex-col justify-between text-xs text-slate-300">
                                 <div class="border-b border-slate-100 w-full h-0"></div>
                                 <div class="border-b border-slate-100 w-full h-0"></div>
                                 <div class="border-b border-slate-100 w-full h-0"></div>
                             </div>
-                            <!-- The Curve -->
                             <svg class="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
-                                <path class="drop-shadow-md" d="M0,80 C30,70 60,30 90,30 C120,30 150,90 180,100 C210,110 240,40 270,20 C300,0 330,40 360,50" fill="none" stroke="var(--color-primary)" stroke-linecap="round" stroke-width="3"></path>
+                                <defs>
+                                    <linearGradient id="gradientLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#E86F85;stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:#9439ef;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#E86F85;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <path class="drop-shadow-sm" d="M0,80 C30,70 60,30 90,30 C120,30 150,90 180,100 C210,110 240,40 270,20 C300,0 330,40 360,50" fill="none" stroke="url(#gradientLine)" stroke-linecap="round" stroke-width="4"></path>
+                                <!-- You Are Here Marker -->
+                                <circle cx="270" cy="20" r="6" fill="white" stroke="#9439ef" stroke-width="3" class="animate-pulse shadow-lg"/>
+                                <text x="270" y="-5" text-anchor="middle" class="text-[10px] font-bold fill-purple-600 uppercase">You</text>
                             </svg>
                         </div>
                         <div class="flex justify-between text-xs text-slate-400 mt-2">
-                            <span>Day 1</span>
+                            <span>Period</span>
                             <span>Ovulation</span>
-                            <span>Day 28</span>
+                            <span>Luteal</span>
                         </div>
                     </div>
                 </section>
                 
-                <!-- Insight Tip -->
+                <!-- Actionable Insight Tip -->
                 <div class="px-4 mb-6">
                     <div class="bg-gradient-to-br from-primary/10 to-purple-100 border border-primary/10 p-5 rounded-2xl relative overflow-hidden">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="material-symbols-outlined text-primary">lightbulb</span>
-                            <span class="text-xs font-bold text-primary uppercase">Daily Insight</span>
+                            <span class="material-symbols-outlined text-primary">fitness_center</span>
+                            <span class="text-xs font-bold text-primary uppercase">Recommendation</span>
                         </div>
-                        <p class="text-slate-800 text-sm font-medium">Your energy levels peak around ovulation due to rising estrogen. Great time for a workout!</p>
+                        <p class="text-slate-800 text-sm font-medium">Estrogen is high right now. It's the perfect time to attempt a personal best in the gym or tackle complex projects!</p>
                     </div>
                 </div>
             </main>
@@ -568,7 +581,7 @@
                     <div class="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <!-- Name Field -->
                         <div class="flex flex-col px-4 py-3 border-b border-gray-100">
-                            <label class="text-gray-500 text-xs font-semibold mb-1" for="profile-fullname">Full Name</label>
+                            <label class="text-gray-500 text-xs font-semibold mb-1" for="profile-fullname">Name</label>
                             <input class="w-full bg-transparent border-none p-0 text-text-main text-base font-medium focus:ring-0 placeholder-gray-400" id="profile-fullname" type="text" value="Sarah Jenkins"/>
                         </div>
                         <!-- DOB Field -->
@@ -730,6 +743,7 @@
             localStorage.setItem('periodTrackerState', JSON.stringify(appState));
             updateDashboard();
             renderCalendar();
+            renderInsights(); // Update insights when saving state
             updateProfileUI(); // Ensure profile stays synced
             
             // Sync user name and image display across app
@@ -768,6 +782,7 @@
             if(viewId === 'view-calendar') renderCalendar();
             if(viewId === 'view-dashboard') updateDashboard();
             if(viewId === 'view-profile') updateProfileUI();
+            if(viewId === 'view-insights') renderInsights();
         }
 
         function openLogSymptoms(dateOverride = null) {
@@ -908,6 +923,58 @@
             document.getElementById('insight-next-period').innerText = `In ${nextPeriodDays} Days`;
             document.getElementById('cycle-phase-text').innerText = (currentDay <= appState.periodLength) ? "Menstruation" : (currentDay >= 12 && currentDay <= 16) ? "Ovulation" : "Luteal Phase";
             document.getElementById('days-until-period').innerText = (currentDay <= appState.periodLength) ? `Period Day ${currentDay}` : `${nextPeriodDays} days until period`;
+        }
+        
+        // --- Insights Logic ---
+        function renderInsights() {
+            const forecastContainer = document.getElementById('insight-symptom-forecast');
+            const totalLogs = Object.keys(appState.logs).length;
+            const threshold = 3; 
+
+            if (totalLogs < threshold) {
+                // Learning State
+                forecastContainer.innerHTML = `
+                    <div class="bg-surface p-6 rounded-xl border border-dashed border-slate-300 flex flex-col items-center text-center gap-3">
+                        <div class="size-12 rounded-full bg-primary/5 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-primary/40 text-2xl">model_training</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700">Building your profile</p>
+                            <p class="text-xs text-slate-400 mt-1 max-w-[200px] mx-auto">We need a bit more data to forecast your symptoms accurately.</p>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden max-w-[150px]">
+                            <div class="bg-primary h-full rounded-full transition-all duration-500" style="width: ${(totalLogs/threshold)*100}%"></div>
+                        </div>
+                        <p class="text-[10px] font-bold text-primary uppercase tracking-wide">${threshold - totalLogs} more logs needed</p>
+                    </div>
+                `;
+            } else {
+                // Unlocked Forecast State (Using mocked predictions for UI demo)
+                forecastContainer.innerHTML = `
+                    <div class="bg-surface p-4 rounded-xl border border-pink-100 shadow-sm flex flex-col gap-3 animate-fade-in">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-primary"></span>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wide">Menstrual Phase (Days 1-5)</p>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-100">Cramps (High)</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">Fatigue</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">Backache</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-3 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all animate-fade-in" style="animation-delay: 0.1s">
+                         <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Luteal Phase (Days 15-28)</p>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100">Bloating</span>
+                            <span class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-500 text-xs font-bold border border-slate-100">Mood Swings</span>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         let calendarDate = new Date();
