@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>Cycle Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "var(--color-primary)",
+                        "primary-deep": "var(--color-primary-deep)",
+                        "background-light": "var(--bg-light, #FFF8F9)",
+                        "surface": "var(--surface, #FFFFFF)",
+                        "text-main": "#5D4E55",
+                        "text-muted": "#9E8C93",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "settings": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'glow': '0 0 20px var(--color-primary)'
+                    }
+                },
+            },
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-primary: #E86F85;
+            --color-primary-deep: #D65A70;
+            --bg-light: #FFF8F9;
+            --surface: #FFFFFF;
+        }
+
+        /* View-specific Themes */
+        .theme-dashboard { --color-primary: #E86F85; --color-primary-deep: #D65A70; --bg-light: #FFF8F9; --surface: #FFFFFF; }
+        .theme-calendar { --color-primary: #ee2bad; --color-primary-deep: #c01d8a; --bg-light: #f8f6f7; --surface: #FFFFFF; }
+        .theme-insights { --color-primary: #8c2bee; --color-primary-deep: #6e1db5; --bg-light: #f7f6f8; --surface: #FFFFFF; }
+        .theme-settings { --color-primary: #9439ef; --color-primary-deep: #7026b9; --bg-light: #f7f6f8; --surface: #FFFFFF; }
+        .theme-log { --color-primary: #ee2b8c; --color-primary-deep: #d41b76; --bg-light: #f8f6f7; --surface: #FFFFFF; }
+        .theme-profile { --color-primary: #ee2b8c; --color-primary-deep: #d41b76; --bg-light: #f8f6f7; --surface: #FFFFFF; }
+
+        body {
+            background-color: #fcfbfd;
+            min-height: 100vh;
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+
+        @keyframes dash { from { stroke-dashoffset: 251.2; } to { stroke-dashoffset: var(--progress, 55); } }
+        .progress-circle {
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2; /* Start empty */
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        
+        /* Smooth view transitions */
+        .view-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .view-section.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Slider Styling */
+        input[type=range] {
+            height: 6px;
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 9999px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: var(--color-primary);
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: var(--color-primary);
+        }
+    </style>
+</head>
+<body class="theme-dashboard text-text-main font-display antialiased selection:bg-primary/20">
+
+    <div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-24">
+        
+        <!-- ======================= DASHBOARD VIEW ======================= -->
+        <section id="view-dashboard" class="view-section active flex-col h-full">
+            <header class="flex p-6 items-center justify-between pt-8">
+                <div class="flex gap-4 items-center">
+                    <div class="profile-image-display bg-gray-100 bg-center bg-no-repeat aspect-square bg-[length:70%] rounded-full h-14 w-14 border-2 border-surface shadow-sm ring-2 ring-primary/20" 
+                         style='background-image: url("https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg");'>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <p class="text-text-main text-xl font-bold leading-tight">Hello, <span class="user-name-display">Sarah</span></p>
+                        <p class="text-text-muted text-xs font-semibold uppercase tracking-widest mt-0.5" id="current-date-display">Wed, Oct 24</p>
+                    </div>
+                </div>
+                <button class="flex items-center justify-center w-12 h-12 rounded-full bg-surface text-text-main hover:bg-primary/5 transition-colors shadow-sm border border-primary/5">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+            </header>
+
+            <main class="flex flex-col gap-8 px-6 mt-2 flex-grow">
+                <!-- Circular Progress -->
+                <div class="flex flex-col items-center justify-center py-2 relative">
+                    <div class="relative w-80 h-80">
+                        <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl transform scale-90 z-0"></div>
+                        <svg class="w-full h-full transform -rotate-90 z-10 relative drop-shadow-sm" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" fill="transparent" r="42" stroke="#FFE4E9" stroke-linecap="round" stroke-width="5"></circle>
+                            <circle id="cycle-progress" class="progress-circle" cx="50" cy="50" fill="transparent" r="42" stroke="var(--color-primary)" stroke-linecap="round" stroke-width="5"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center z-20">
+                            <span class="text-text-muted text-sm font-semibold uppercase tracking-wider mb-1">Cycle Day</span>
+                            <span id="cycle-day-number" class="text-6xl font-extrabold text-text-main tracking-tighter drop-shadow-sm">--</span>
+                            <span class="text-text-muted font-medium text-sm mt-1">of <span id="total-cycle-length">28</span></span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <h1 class="text-text-main text-3xl font-extrabold mb-3 tracking-tight" id="cycle-phase-text">Luteal Phase</h1>
+                        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-surface shadow-sm border border-primary/10">
+                            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            <p class="text-primary-deep text-sm font-bold" id="days-until-period">Calculated...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="openLogSymptoms()" class="w-full py-5 bg-gradient-to-r from-primary to-primary-deep text-white font-bold text-lg rounded-2xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-3 mb-6">
+                    <span class="material-symbols-outlined">edit_square</span>
+                    Log Symptoms for Today
+                </button>
+            </main>
+        </section>
+
+        <!-- ======================= CALENDAR VIEW ======================= -->
+        <section id="view-calendar" class="view-section flex-col h-full">
+            <header class="sticky top-0 z-10 bg-surface/90 backdrop-blur-md px-4 pt-4 pb-2">
+                <div class="flex items-center justify-between">
+                    <button onclick="changeMonth(-1)" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <h2 id="calendar-month-title" class="text-xl font-bold leading-tight text-center flex-1">October 2023</h2>
+                    <button onclick="changeMonth(1)" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                </div>
+                <div class="mt-4 grid grid-cols-7 gap-1 text-center">
+                    <div class="text-xs font-bold text-gray-400 uppercase">S</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">M</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">T</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">W</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">T</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">F</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase">S</div>
+                </div>
+            </header>
+
+            <main class="w-full px-4 flex flex-col gap-6 flex-grow overflow-y-auto pb-safe">
+                <!-- Calendar Grid -->
+                <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 gap-x-1 mt-2">
+                    <!-- Javascript populates this -->
+                </div>
+
+                <!-- Legend -->
+                <div class="flex items-center justify-center gap-3 py-1">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-100 bg-surface shadow-sm">
+                        <span class="h-2 w-2 rounded-full bg-primary"></span>
+                        <p class="text-xs font-semibold">Period</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-100 bg-surface shadow-sm">
+                        <span class="h-2 w-2 rounded-full bg-pink-200"></span>
+                        <p class="text-xs font-semibold">Fertile</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-100 bg-surface shadow-sm">
+                        <span class="material-symbols-outlined text-primary text-[14px]">filter_vintage</span>
+                        <p class="text-xs font-semibold">Ovulation</p>
+                    </div>
+                </div>
+
+                <!-- Selected Day Panel -->
+                <div class="flex flex-col items-start gap-4 rounded-xl border border-pink-100 bg-surface p-5 shadow-sm mb-6">
+                    <div class="flex w-full items-start justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2" id="selected-date-display">
+                                Today
+                                <span class="inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-xs font-bold text-primary">
+                                    Cycle Day <span id="selected-cycle-day">--</span>
+                                </span>
+                            </h3>
+                            <p class="mt-1 text-sm font-medium text-pink-600">Daily Summary</p>
+                        </div>
+                        <div class="h-10 w-10 flex items-center justify-center rounded-full bg-pink-50 text-primary">
+                            <span class="material-symbols-outlined">filter_vintage</span>
+                        </div>
+                    </div>
+                    <!-- Logged Symptoms Preview (Static mock for now) -->
+                    <div class="flex flex-wrap gap-2" id="calendar-symptoms-preview">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="h-px w-full bg-gray-100"></div>
+                    <button onclick="openLogSymptoms()" class="flex w-full cursor-pointer items-center justify-center rounded-xl h-12 bg-primary text-white text-base font-bold leading-normal shadow-lg shadow-primary/20 hover:bg-pink-600 transition-colors active:scale-[0.98]">
+                        <span class="mr-2 material-symbols-outlined">edit_note</span>
+                        Log Symptoms
+                    </button>
+                </div>
+            </main>
+        </section>
+
+        <!-- ======================= INSIGHTS VIEW ======================= -->
+        <section id="view-insights" class="view-section flex-col h-full">
+            <header class="sticky top-0 z-10 bg-surface/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-b border-slate-100">
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">Period Insights</h1>
+                    <p class="text-xs text-slate-500 font-medium">Updated today</p>
+                </div>
+            </header>
+            
+            <main class="flex-grow overflow-y-auto pb-safe">
+                <!-- Top Stats -->
+                <div class="p-4 grid grid-cols-2 gap-4">
+                    <div class="bg-surface rounded-2xl p-5 shadow-sm border border-slate-100">
+                        <span class="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full inline-block mb-2">Regular</span>
+                        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Avg Cycle</p>
+                        <p class="text-slate-900 text-2xl font-bold"><span id="insight-cycle-length">28</span> Days</p>
+                    </div>
+                    <div class="bg-primary rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
+                        <p class="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Next Period</p>
+                        <p class="text-white text-2xl font-bold" id="insight-next-period">In 16 Days</p>
+                    </div>
+                </div>
+
+                <!-- History Chart -->
+                <div class="px-4 pb-4">
+                    <div class="bg-surface rounded-2xl p-6 shadow-sm border border-slate-100">
+                        <h3 class="text-lg font-bold mb-4">Cycle History</h3>
+                        <div class="h-32 flex items-end justify-between gap-2">
+                            <div class="flex-1 bg-primary/20 rounded-t-lg h-[60%]"></div>
+                            <div class="flex-1 bg-primary/40 rounded-t-lg h-[80%]"></div>
+                            <div class="flex-1 bg-primary rounded-t-lg h-[90%] relative">
+                                <span class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">Now</span>
+                            </div>
+                            <div class="flex-1 bg-primary/20 rounded-t-lg h-[75%]"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 mt-2">
+                            <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Symptom Patterns -->
+                <section class="px-4 py-2">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 px-1">Symptom Patterns</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-surface p-4 rounded-xl border border-slate-100 flex items-center gap-4">
+                            <div class="size-12 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-orange-500" style="font-size: 24px;">bolt</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between mb-1">
+                                    <p class="font-bold text-slate-800">Cramps</p>
+                                    <span class="text-xs font-medium text-slate-500">Moderate</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="bg-orange-400 h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-surface p-4 rounded-xl border border-slate-100 flex items-center gap-4">
+                            <div class="size-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-blue-500" style="font-size: 24px;">water_drop</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between mb-1">
+                                    <p class="font-bold text-slate-800">Bloating</p>
+                                    <span class="text-xs font-medium text-slate-500">High</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="bg-blue-400 h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Mood Flow -->
+                <section class="px-4 py-4">
+                    <div class="rounded-2xl bg-surface p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-6 relative z-10">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Mood Flow</h3>
+                                <p class="text-sm text-slate-500 mt-1">Energy dips during Luteal phase</p>
+                            </div>
+                            <div class="size-8 rounded-full bg-pink-50 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-pink-500" style="font-size: 20px;">mood</span>
+                            </div>
+                        </div>
+                        <!-- Abstract Line Chart Visualization -->
+                        <div class="relative h-32 w-full mt-2">
+                            <!-- Grid Lines -->
+                            <div class="absolute inset-0 flex flex-col justify-between text-xs text-slate-300">
+                                <div class="border-b border-slate-100 w-full h-0"></div>
+                                <div class="border-b border-slate-100 w-full h-0"></div>
+                                <div class="border-b border-slate-100 w-full h-0"></div>
+                            </div>
+                            <!-- The Curve -->
+                            <svg class="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
+                                <path class="drop-shadow-md" d="M0,80 C30,70 60,30 90,30 C120,30 150,90 180,100 C210,110 240,40 270,20 C300,0 330,40 360,50" fill="none" stroke="var(--color-primary)" stroke-linecap="round" stroke-width="3"></path>
+                            </svg>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-400 mt-2">
+                            <span>Day 1</span>
+                            <span>Ovulation</span>
+                            <span>Day 28</span>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Insight Tip -->
+                <div class="px-4 mb-6">
+                    <div class="bg-gradient-to-br from-primary/10 to-purple-100 border border-primary/10 p-5 rounded-2xl relative overflow-hidden">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="material-symbols-outlined text-primary">lightbulb</span>
+                            <span class="text-xs font-bold text-primary uppercase">Daily Insight</span>
+                        </div>
+                        <p class="text-slate-800 text-sm font-medium">Your energy levels peak around ovulation due to rising estrogen. Great time for a workout!</p>
+                    </div>
+                </div>
+            </main>
+        </section>
+
+        <!-- ======================= SETTINGS VIEW ======================= -->
+        <section id="view-settings" class="view-section flex-col h-full font-settings">
+             <div class="sticky top-0 z-10 flex items-center bg-surface/90 backdrop-blur-md px-4 py-3 justify-between border-b border-gray-100">
+                <h2 class="text-2xl font-extrabold flex-1">Settings</h2>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col items-end mr-1">
+                        <span class="text-xs font-medium text-gray-500">Hello,</span>
+                        <span class="text-sm font-bold text-primary user-name-display">Sarah</span>
+                    </div>
+                    <div class="profile-image-display-img-container size-10 rounded-full overflow-hidden border-2 border-primary/20">
+                         <img class="profile-image-display-img w-full h-full object-cover p-1 bg-gray-100" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 space-y-6 flex-grow overflow-y-auto pb-safe">
+                <!-- Cycle Settings -->
+                <div>
+                    <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider px-2 pb-2">My Cycle</h3>
+                    <div class="bg-surface rounded-2xl shadow-sm divide-y divide-gray-100 border border-gray-50">
+                        <div class="flex items-center justify-between p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-red-100 text-red-500 rounded-full p-2"><span class="material-symbols-outlined text-[20px]">calendar_month</span></div>
+                                <p class="font-medium">Cycle Length</p>
+                            </div>
+                            <input type="number" id="setting-cycle-length" class="w-16 text-right border-0 bg-transparent font-bold text-gray-600 focus:ring-0" value="28">
+                        </div>
+                        <div class="flex items-center justify-between p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-red-100 text-red-500 rounded-full p-2"><span class="material-symbols-outlined text-[20px]">water_drop</span></div>
+                                <p class="font-medium">Period Length</p>
+                            </div>
+                            <input type="number" id="setting-period-length" class="w-16 text-right border-0 bg-transparent font-bold text-gray-600 focus:ring-0" value="5">
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2 px-2">Changes are saved automatically.</p>
+                </div>
+
+                <!-- Mock Toggles -->
+                <div>
+                    <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider px-2 pb-2">Notifications</h3>
+                    <div class="bg-surface rounded-2xl shadow-sm divide-y divide-gray-100 border border-gray-50">
+                        <div class="flex items-center justify-between p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-orange-100 text-orange-500 rounded-full p-2"><span class="material-symbols-outlined text-[20px]">notifications_active</span></div>
+                                <p class="font-medium">Predictions</p>
+                            </div>
+                            <div class="w-11 h-6 bg-primary rounded-full relative"><div class="w-5 h-5 bg-surface rounded-full absolute top-0.5 right-0.5 shadow-sm"></div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                 <!-- Reset -->
+                 <button onclick="resetData()" class="w-full p-4 text-red-500 font-bold bg-surface rounded-2xl shadow-sm border border-red-50 hover:bg-red-50 transition">
+                    Reset All Data
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================= LOG SYMPTOMS VIEW ======================= -->
+        <section id="view-log-symptoms" class="view-section flex-col h-full z-[100] bg-background-light absolute inset-0 font-settings">
+            <header class="flex items-center px-4 py-4 justify-between sticky top-0 z-50 bg-background-light/95 backdrop-blur-md border-b border-black/5">
+                <button onclick="goBackFromLog()" class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+                <h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center" id="log-date-title">Today, Oct 24</h2>
+                <button onclick="saveLog()" class="flex h-10 items-center justify-center px-2">
+                    <p class="text-primary font-bold text-base hover:text-primary-deep transition-colors">Save</p>
+                </button>
+            </header>
+
+            <main class="flex-1 overflow-y-auto no-scrollbar pb-32">
+                <!-- Period Flow -->
+                <section class="mt-6 px-4">
+                    <h2 class="text-xl font-bold mb-4 px-1">Period Flow</h2>
+                    <div class="flex p-1 bg-surface rounded-xl shadow-sm border border-black/5">
+                        <label class="flex-1 cursor-pointer group">
+                            <input class="peer sr-only" name="flow" type="radio" value="Spotting"/>
+                            <div class="flex items-center justify-center py-3 rounded-lg transition-all duration-200 peer-checked:bg-primary peer-checked:text-white text-slate-500 font-medium text-sm peer-checked:shadow-md">Spotting</div>
+                        </label>
+                        <label class="flex-1 cursor-pointer group">
+                            <input class="peer sr-only" name="flow" type="radio" value="Light"/>
+                            <div class="flex items-center justify-center py-3 rounded-lg transition-all duration-200 peer-checked:bg-primary peer-checked:text-white text-slate-500 font-medium text-sm peer-checked:shadow-md">Light</div>
+                        </label>
+                        <label class="flex-1 cursor-pointer group">
+                            <input class="peer sr-only" name="flow" type="radio" value="Medium"/>
+                            <div class="flex items-center justify-center py-3 rounded-lg transition-all duration-200 peer-checked:bg-primary peer-checked:text-white text-slate-500 font-medium text-sm peer-checked:shadow-md">Medium</div>
+                        </label>
+                        <label class="flex-1 cursor-pointer group">
+                            <input class="peer sr-only" name="flow" type="radio" value="Heavy"/>
+                            <div class="flex items-center justify-center py-3 rounded-lg transition-all duration-200 peer-checked:bg-primary peer-checked:text-white text-slate-500 font-medium text-sm peer-checked:shadow-md">Heavy</div>
+                        </label>
+                    </div>
+                </section>
+
+                <div class="h-6"></div>
+
+                <!-- Mood -->
+                <section class="px-4">
+                    <h2 class="text-xl font-bold mb-4 px-1">Mood</h2>
+                    <div class="grid grid-cols-4 gap-3">
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="happy"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😄</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Happy</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="sensitive"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">🥺</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Sensitive</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="sad"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😢</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Sad</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="anxious"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😰</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Anxious</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="angry"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😡</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Angry</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="calm"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😌</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Calm</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="tired"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">😴</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Tired</span></label>
+                        <label class="cursor-pointer group flex flex-col items-center gap-2"><input class="peer sr-only" name="mood" type="checkbox" value="excited"/><div class="w-full aspect-square bg-surface rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-200">🤩</div><span class="text-xs font-medium text-slate-600 peer-checked:text-primary">Excited</span></label>
+                    </div>
+                </section>
+
+                <div class="h-6"></div>
+
+                <!-- Physical Symptoms -->
+                <section class="px-4">
+                    <h2 class="text-xl font-bold mb-4 px-1">Physical Symptoms</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="cramps"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Cramps</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="headache"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Headache</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="bloating"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Bloating</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="acne"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Acne</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="backache"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Backache</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="tender"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Tender Breasts</div></label>
+                        <label class="cursor-pointer"><input class="peer sr-only" name="symptoms" type="checkbox" value="cravings"/><div class="px-4 py-2 rounded-full border border-slate-200 bg-surface text-sm font-medium transition-all hover:bg-slate-50 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">Cravings</div></label>
+                    </div>
+                </section>
+
+                <div class="h-6"></div>
+
+                <!-- Energy -->
+                <section class="px-4">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <h2 class="text-xl font-bold">Energy</h2>
+                        <span class="text-primary font-bold text-sm bg-primary/10 px-2 py-1 rounded-lg" id="energy-val-display">75%</span>
+                    </div>
+                    <div class="bg-surface p-5 rounded-2xl shadow-sm border border-black/5">
+                        <input class="w-full" id="energy-slider" max="100" min="0" type="range" value="75" oninput="document.getElementById('energy-val-display').innerText = this.value + '%'"/>
+                        <div class="flex justify-between mt-3 text-xs font-medium text-slate-400">
+                            <span>Low Battery</span>
+                            <span>Fully Charged</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="h-6"></div>
+
+                <!-- Notes -->
+                <section class="px-4 mb-6">
+                    <h2 class="text-xl font-bold mb-4 px-1">Notes</h2>
+                    <div class="bg-surface p-1 rounded-2xl shadow-sm border border-black/5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                        <textarea id="log-notes" class="w-full bg-transparent border-0 rounded-xl p-4 text-slate-800 placeholder:text-slate-400 focus:ring-0 resize-none" placeholder="Anything else on your mind?" rows="4"></textarea>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Floating Save Button -->
+            <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-background-light via-background-light to-transparent pointer-events-none flex justify-center pb-8">
+                <button onclick="saveLog()" class="pointer-events-auto w-full max-w-[90%] bg-primary hover:bg-primary-deep text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">check</span>
+                    Save Log
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================= PROFILE SETTINGS VIEW ======================= -->
+        <section id="view-profile" class="view-section flex-col h-full font-settings bg-background-light z-50">
+            <!-- Header -->
+            <header class="sticky top-0 z-20 flex items-center justify-between bg-surface/90 backdrop-blur-md px-4 py-4 border-b border-gray-100">
+                <button onclick="switchView('view-dashboard', 'theme-dashboard', document.getElementById('nav-dashboard'))" class="flex size-10 items-center justify-center rounded-full hover:bg-black/5 transition-colors">
+                    <span class="material-symbols-outlined text-[24px]">arrow_back_ios_new</span>
+                </button>
+                <h1 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center">Profile Settings</h1>
+                <div class="size-10"></div> 
+            </header>
+            
+            <main class="flex-1 w-full flex flex-col pt-2 overflow-y-auto pb-32">
+                <!-- Profile Header -->
+                <div class="flex flex-col items-center justify-center py-6">
+                    <div class="relative group cursor-pointer" onclick="openProfileImageModal()">
+                        <div class="profile-image-display size-28 rounded-full bg-cover bg-center border-4 border-surface shadow-lg transition-transform transform group-hover:scale-105 bg-gray-100 bg-[length:70%] bg-no-repeat" style='background-image: url("https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg");'></div>
+                        <div class="absolute bottom-0 right-1 bg-primary text-white p-2 rounded-full border-[3px] border-background-light shadow-sm flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[16px] font-bold">edit</span>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-primary font-bold text-sm tracking-wide uppercase cursor-pointer hover:text-primary/80 transition-colors" onclick="openProfileImageModal()">Edit Photo</p>
+                </div>
+
+                <!-- Section 1: Personal Identity -->
+                <div class="px-4 mb-2">
+                    <h2 class="text-gray-400 text-xs font-bold uppercase tracking-wider pl-4 mb-2">Personal Identity</h2>
+                    <div class="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <!-- Name Field -->
+                        <div class="flex flex-col px-4 py-3 border-b border-gray-100">
+                            <label class="text-gray-500 text-xs font-semibold mb-1" for="profile-fullname">Full Name</label>
+                            <input class="w-full bg-transparent border-none p-0 text-text-main text-base font-medium focus:ring-0 placeholder-gray-400" id="profile-fullname" type="text" value="Sarah Jenkins"/>
+                        </div>
+                        <!-- DOB Field -->
+                        <div class="flex flex-col px-4 py-3">
+                            <label class="text-gray-500 text-xs font-semibold mb-1" for="profile-dob">Date of Birth</label>
+                            <div class="flex items-center justify-between cursor-pointer group">
+                                <input class="w-full bg-transparent border-none p-0 text-text-main text-base font-medium focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden" id="profile-dob" type="date" value="1995-06-15"/>
+                                <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">calendar_month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Cycle Configuration -->
+                <div class="px-4 mb-2 mt-6">
+                    <h2 class="text-gray-400 text-xs font-bold uppercase tracking-wider pl-4 mb-2">Cycle Settings</h2>
+                    <div class="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <!-- Cycle Length -->
+                        <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                            <div class="flex flex-col">
+                                <span class="text-text-main text-base font-medium">Cycle Length</span>
+                                <span class="text-gray-400 text-xs">Average days between periods</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-background-light rounded-lg p-1">
+                                <button onclick="adjustSetting('profile-cycle-len', -1)" class="size-8 flex items-center justify-center rounded-md bg-white shadow-sm text-primary hover:bg-gray-50 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined text-lg">remove</span>
+                                </button>
+                                <span id="profile-cycle-len-display" class="text-base font-bold w-6 text-center">28</span>
+                                <button onclick="adjustSetting('profile-cycle-len', 1)" class="size-8 flex items-center justify-center rounded-md bg-white shadow-sm text-primary hover:bg-gray-50 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined text-lg">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Period Duration -->
+                        <div class="flex items-center justify-between px-4 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-text-main text-base font-medium">Period Length</span>
+                                <span class="text-gray-400 text-xs">Average duration of flow</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-background-light rounded-lg p-1">
+                                <button onclick="adjustSetting('profile-period-len', -1)" class="size-8 flex items-center justify-center rounded-md bg-white shadow-sm text-primary hover:bg-gray-50 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined text-lg">remove</span>
+                                </button>
+                                <span id="profile-period-len-display" class="text-base font-bold w-6 text-center">5</span>
+                                <button onclick="adjustSetting('profile-period-len', 1)" class="size-8 flex items-center justify-center rounded-md bg-white shadow-sm text-primary hover:bg-gray-50 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined text-lg">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Spacer for bottom padding instead of Log Out -->
+                <div class="h-24"></div>
+            </main>
+
+            <!-- Sticky Bottom Action -->
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-white via-white to-transparent pb-6 pt-12 px-6 z-10 flex justify-center pointer-events-none">
+                <button onclick="saveProfile()" class="pointer-events-auto w-full max-w-md shadow-xl bg-primary hover:bg-primary/90 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================= PROFILE IMAGE MODAL ======================= -->
+        <div id="profile-image-modal" class="hidden fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-opacity">
+            <div class="w-full max-w-sm bg-surface rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+                <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-text-main">Choose Profile Picture</h3>
+                    <button onclick="closeProfileImageModal()" class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="p-6 grid grid-cols-3 gap-4">
+                    <!-- 1. Sunflower -->
+                    <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg" class="w-full h-full object-contain">
+                    </button>
+
+                    <!-- 2. Cherry Blossom -->
+                    <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f338.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f338.svg" class="w-full h-full object-contain">
+                    </button>
+
+                    <!-- 3. Rose -->
+                    <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f339.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f339.svg" class="w-full h-full object-contain">
+                    </button>
+                    
+                    <!-- 4. Hibiscus -->
+                     <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33a.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33a.svg" class="w-full h-full object-contain">
+                    </button>
+                    
+                    <!-- 5. Tulip -->
+                     <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f337.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f337.svg" class="w-full h-full object-contain">
+                    </button>
+
+                    <!-- 6. Lotus -->
+                    <button onclick="selectProfileImage('https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1ffab.svg')" class="aspect-square rounded-full border-2 border-transparent hover:border-primary hover:scale-105 transition-all overflow-hidden bg-gray-100 p-3">
+                         <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1ffab.svg" class="w-full h-full object-contain">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= BOTTOM NAV ======================= -->
+        <nav class="fixed bottom-0 left-0 w-full z-40 bg-surface/90 backdrop-blur-xl border-t border-gray-100 pb-safe pt-1 max-w-md mx-auto left-0 right-0">
+            <div class="flex justify-around items-end px-2 pt-2 pb-2">
+                <button id="nav-dashboard" class="nav-btn flex flex-1 flex-col items-center gap-1 text-primary group" onclick="switchView('view-dashboard', 'theme-dashboard', this)">
+                    <span class="material-symbols-outlined text-[26px] group-[.active]:font-variation-settings-fill">home</span>
+                    <span class="text-[10px] font-bold">Home</span>
+                </button>
+                <button id="nav-calendar" class="nav-btn flex flex-1 flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors group" onclick="switchView('view-calendar', 'theme-calendar', this)">
+                    <span class="material-symbols-outlined text-[26px] group-[.active]:font-variation-settings-fill">calendar_month</span>
+                    <span class="text-[10px] font-bold">Calendar</span>
+                </button>
+                <button id="nav-insights" class="nav-btn flex flex-1 flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors group" onclick="switchView('view-insights', 'theme-insights', this)">
+                    <span class="material-symbols-outlined text-[26px] group-[.active]:font-variation-settings-fill">bar_chart</span>
+                    <span class="text-[10px] font-bold">Insights</span>
+                </button>
+                <button id="nav-profile" class="nav-btn flex flex-1 flex-col items-center gap-1 text-text-muted hover:text-primary transition-colors group" onclick="switchView('view-profile', 'theme-profile', this)">
+                    <span class="material-symbols-outlined text-[26px] group-[.active]:font-variation-settings-fill">person</span>
+                    <span class="text-[10px] font-bold">Profile</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(console.log);
+        }
+
+        // State Management
+        const defaultState = {
+            cycleLength: 28,
+            periodLength: 5,
+            userName: "Sarah Jenkins",
+            dob: "1995-06-15",
+            email: "sarah.jenkins@example.com",
+            faceIdEnabled: false,
+            // Updated default to a REAL Sunflower illustration
+            profileImage: "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33b.svg",
+            lastPeriodStart: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
+            logs: {} 
+        };
+
+        let appState = JSON.parse(localStorage.getItem('periodTrackerState')) || defaultState;
+        // Ensure profile image exists in state for older saves
+        if(!appState.profileImage) appState.profileImage = defaultState.profileImage;
+
+        let selectedDate = new Date();
+        let lastViewId = 'view-dashboard';
+
+        function saveState() {
+            localStorage.setItem('periodTrackerState', JSON.stringify(appState));
+            updateDashboard();
+            renderCalendar();
+            updateProfileUI(); // Ensure profile stays synced
+            
+            // Sync user name and image display across app
+            document.querySelectorAll('.user-name-display').forEach(el => el.innerText = appState.userName.split(' ')[0]);
+            updateAllProfileImages();
+        }
+        
+        function updateAllProfileImages() {
+            // Update background images
+            document.querySelectorAll('.profile-image-display').forEach(el => {
+                el.style.backgroundImage = `url("${appState.profileImage}")`;
+            });
+            // Update img src tags
+            document.querySelectorAll('img.profile-image-display-img').forEach(el => {
+                el.src = appState.profileImage;
+            });
+        }
+
+        // Navigation
+        function switchView(viewId, themeClass, btnElement) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            document.body.className = `${themeClass} text-text-main font-display antialiased selection:bg-primary/20`;
+            
+            if (btnElement) {
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('text-primary', 'active');
+                    btn.classList.add('text-text-muted');
+                });
+                btnElement.classList.remove('text-text-muted');
+                btnElement.classList.add('text-primary', 'active');
+                lastViewId = viewId;
+            }
+
+            if(viewId === 'view-calendar') renderCalendar();
+            if(viewId === 'view-dashboard') updateDashboard();
+            if(viewId === 'view-profile') updateProfileUI();
+        }
+
+        function openLogSymptoms(dateOverride = null) {
+            const dateToLog = dateOverride || selectedDate;
+            const dateKey = dateToLog.toISOString().split('T')[0];
+            document.getElementById('log-date-title').innerText = dateToLog.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+            const log = appState.logs[dateKey] || {};
+            
+            document.querySelectorAll('input[name="flow"]').forEach(el => el.checked = (el.value === log.flow));
+            document.querySelectorAll('input[name="mood"]').forEach(el => el.checked = log.moods?.includes(el.value));
+            document.querySelectorAll('input[name="symptoms"]').forEach(el => el.checked = log.symptoms?.includes(el.value));
+            document.getElementById('energy-slider').value = log.energy || 75;
+            document.getElementById('energy-val-display').innerText = (log.energy || 75) + '%';
+            document.getElementById('log-notes').value = log.notes || "";
+
+            switchView('view-log-symptoms', 'theme-log', null);
+        }
+
+        function saveLog() {
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            const flow = document.querySelector('input[name="flow"]:checked')?.value || null;
+            const moods = Array.from(document.querySelectorAll('input[name="mood"]:checked')).map(el => el.value);
+            const symptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(el => el.value);
+            const energy = document.getElementById('energy-slider').value;
+            const notes = document.getElementById('log-notes').value;
+
+            // 1. Save the log first
+            appState.logs[dateKey] = { flow, moods, symptoms, energy, notes };
+
+            // 2. Smart Cycle Detection Logic
+            if (flow) {
+                 const currentLogDate = new Date(selectedDate);
+                 const previousCycleStart = new Date(appState.lastPeriodStart);
+                 
+                 // Check if yesterday had flow
+                 const yesterday = new Date(currentLogDate);
+                 yesterday.setDate(yesterday.getDate() - 1);
+                 const yesterdayKey = yesterday.toISOString().split('T')[0];
+                 const yesterdayHasFlow = appState.logs[yesterdayKey]?.flow;
+
+                 // If yesterday had NO flow, and this date is after the previous known start (plus a small buffer)
+                 // We treat this as a new cycle start.
+                 // Buffer: 14 days (shortest reasonable cycle to assume new period)
+                 const daysDiff = (currentLogDate - previousCycleStart) / (1000 * 60 * 60 * 24);
+
+                 // Also update if the difference is very large (e.g. user missed logging a month)
+                 // OR if it's strictly a new period (>14 days since last start)
+                 if (!yesterdayHasFlow && daysDiff > 14) {
+                     appState.lastPeriodStart = selectedDate.toISOString();
+                     // We don't use alert() to avoid interrupting flow, but the UI will update
+                     // The cycle day number on dashboard will change immediately.
+                 }
+            }
+
+            saveState();
+            goBackFromLog();
+        }
+
+        function goBackFromLog() {
+            const btnMap = { 'view-dashboard': 'nav-dashboard', 'view-calendar': 'nav-calendar', 'view-insights': 'nav-insights', 'view-profile': 'nav-profile', 'view-settings': 'nav-settings' }; // Added profile
+            const btnId = btnMap[lastViewId] || 'nav-dashboard';
+            document.getElementById(btnId).click();
+        }
+
+        // --- Profile Logic ---
+        function updateProfileUI() {
+            // Populate Inputs
+            document.getElementById('profile-fullname').value = appState.userName;
+            document.getElementById('profile-dob').value = appState.dob;
+            
+            // Populate Cycle Settings Display
+            document.getElementById('profile-cycle-len-display').innerText = appState.cycleLength;
+            document.getElementById('profile-period-len-display').innerText = appState.periodLength;
+        }
+        
+        // --- Profile Image Logic ---
+        function openProfileImageModal() {
+            document.getElementById('profile-image-modal').classList.remove('hidden');
+        }
+        
+        function closeProfileImageModal() {
+            document.getElementById('profile-image-modal').classList.add('hidden');
+        }
+        
+        function selectProfileImage(url) {
+            appState.profileImage = url;
+            saveState();
+            closeProfileImageModal();
+        }
+
+        function adjustSetting(id, delta) {
+            let newVal;
+            if (id === 'profile-cycle-len') {
+                newVal = appState.cycleLength + delta;
+                if(newVal < 10) newVal = 10;
+                if(newVal > 60) newVal = 60;
+                appState.cycleLength = newVal;
+            } else if (id === 'profile-period-len') {
+                newVal = appState.periodLength + delta;
+                if(newVal < 1) newVal = 1;
+                if(newVal > 15) newVal = 15;
+                appState.periodLength = newVal;
+            }
+            // Update UI immediately for responsiveness
+            updateProfileUI();
+        }
+
+        function saveProfile() {
+            appState.userName = document.getElementById('profile-fullname').value;
+            appState.dob = document.getElementById('profile-dob').value;
+            
+            saveState();
+            alert("Profile Saved Successfully!");
+        }
+
+        // --- Dashboard Logic ---
+        function updateDashboard() {
+            const today = new Date();
+            const lastPeriod = new Date(appState.lastPeriodStart);
+            const diffDays = Math.floor((today - lastPeriod) / (1000 * 60 * 60 * 24)); 
+            let currentDay = (diffDays % appState.cycleLength) + 1;
+            if(currentDay <= 0) currentDay += appState.cycleLength;
+
+            document.getElementById('current-date-display').innerText = today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            document.getElementById('cycle-day-number').innerText = currentDay;
+            document.getElementById('total-cycle-length').innerText = appState.cycleLength;
+            document.getElementById('insight-cycle-length').innerText = appState.cycleLength;
+            document.querySelectorAll('.user-name-display').forEach(el => el.innerText = appState.userName.split(' ')[0]);
+
+            const circle = document.getElementById('cycle-progress');
+            const circumference = 251.2;
+            const progress = circumference - (currentDay / appState.cycleLength) * circumference;
+            circle.style.setProperty('--progress', progress);
+            circle.style.strokeDashoffset = progress;
+
+            const nextPeriodDays = appState.cycleLength - currentDay + 1;
+            document.getElementById('insight-next-period').innerText = `In ${nextPeriodDays} Days`;
+            document.getElementById('cycle-phase-text').innerText = (currentDay <= appState.periodLength) ? "Menstruation" : (currentDay >= 12 && currentDay <= 16) ? "Ovulation" : "Luteal Phase";
+            document.getElementById('days-until-period').innerText = (currentDay <= appState.periodLength) ? `Period Day ${currentDay}` : `${nextPeriodDays} days until period`;
+        }
+
+        let calendarDate = new Date();
+        function changeMonth(delta) {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            document.getElementById('calendar-month-title').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const lastPeriod = new Date(appState.lastPeriodStart);
+            const cycleLen = parseInt(appState.cycleLength);
+            const periodLen = parseInt(appState.periodLength);
+
+            // Empty slots
+            for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), {className: 'h-12'}));
+
+            // Days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const currentDate = new Date(year, month, d);
+                const dateKey = currentDate.toISOString().split('T')[0];
+                const btn = document.createElement('button');
+                btn.className = 'h-12 w-full flex items-center justify-center rounded-lg text-sm font-medium transition-colors relative';
+                btn.onclick = () => selectDate(currentDate);
+
+                // Check logic
+                const diffTime = currentDate - lastPeriod;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const cycleDay = (diffDays % cycleLen) + 1;
+                
+                let isPeriod = (cycleDay >= 1 && cycleDay <= periodLen);
+                let isOvulation = (cycleDay === 14);
+                let isFertile = (cycleDay >= 10 && cycleDay <= 15);
+                let hasLog = !!appState.logs[dateKey];
+
+                if (isPeriod) btn.innerHTML = `<div class="h-10 w-10 flex items-center justify-center rounded-lg bg-primary text-white shadow-md">${d}</div>`;
+                else if (isOvulation) btn.innerHTML = `<div class="h-10 w-10 flex items-center justify-center rounded-lg border-2 border-primary text-primary font-bold relative">${d}<span class="absolute -top-1 -right-1 flex h-2 w-2"><span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span></div>`;
+                else if (isFertile) btn.innerHTML = `<div class="h-10 w-10 flex items-center justify-center rounded-lg bg-pink-100 text-primary font-bold">${d}</div>`;
+                else btn.innerText = d;
+
+                // Marker for existing log
+                if (hasLog) {
+                    const dot = document.createElement('div');
+                    dot.className = "absolute bottom-1 w-1 h-1 bg-gray-400 rounded-full";
+                    btn.appendChild(dot);
+                }
+
+                if (selectedDate.toDateString() === currentDate.toDateString()) {
+                   btn.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                }
+
+                grid.appendChild(btn);
+            }
+            updateSelectedDayPanel();
+        }
+
+        function selectDate(date) {
+            selectedDate = date;
+            renderCalendar(); 
+        }
+
+        function updateSelectedDayPanel() {
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            document.getElementById('selected-date-display').innerText = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            const diffDays = Math.floor((selectedDate - new Date(appState.lastPeriodStart)) / (1000 * 60 * 60 * 24));
+            let cDay = (diffDays % appState.cycleLength) + 1;
+            if (cDay <= 0) cDay += appState.cycleLength; 
+            document.getElementById('selected-cycle-day').innerText = cDay;
+
+            const log = appState.logs[dateKey];
+            const preview = document.getElementById('calendar-symptoms-preview');
+            preview.innerHTML = '';
+            
+            if (log) {
+                if(log.flow) preview.innerHTML += `<span class="inline-flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600"><span class="material-symbols-outlined text-[16px]">water_drop</span>${log.flow}</span>`;
+                log.moods?.forEach(m => preview.innerHTML += `<span class="inline-flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600">${m}</span>`);
+            } else {
+                preview.innerHTML = '<span class="text-xs text-gray-400 italic">No symptoms logged yet</span>';
+            }
+        }
+
+        function resetData() {
+            if(confirm("Reset all data?")) {
+                localStorage.removeItem('periodTrackerState');
+                location.reload();
+            }
+        }
+
+        // Init
+        document.getElementById('setting-cycle-length').addEventListener('change', (e) => { appState.cycleLength = parseInt(e.target.value); saveState(); });
+        document.getElementById('setting-period-length').addEventListener('change', (e) => { appState.periodLength = parseInt(e.target.value); saveState(); });
+        document.getElementById('setting-cycle-length').value = appState.cycleLength;
+        document.getElementById('setting-period-length').value = appState.periodLength;
+        
+        updateDashboard();
+        updateProfileUI(); // Init profile inputs
+        updateAllProfileImages(); // Ensure images are set on load
+        document.getElementById('nav-dashboard').classList.add('text-primary', 'active');
+    </script>
+</body>
+</html>
