@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Simple Purple Circle Icon for PWA -->
+  <circle cx="256" cy="256" r="256" fill="#9439ef"/>
+  <path d="M256 120 C 200 120, 150 160, 150 220 C 150 290, 256 390, 256 390 C 256 390, 362 290, 362 220 C 362 160, 312 120, 256 120 Z" fill="white" opacity="0.9"/>
+</svg>
